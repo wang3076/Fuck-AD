@@ -23,7 +23,6 @@ import androidx.core.net.toUri
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.hujiayucc.hook.BuildConfig
 import com.hujiayucc.hook.R
-import com.hujiayucc.hook.author.Author
 import com.hujiayucc.hook.data.AppList
 import com.hujiayucc.hook.data.Data.prefsBridge
 import com.hujiayucc.hook.databinding.ActivityMainBinding
@@ -46,7 +45,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     private val disposables = CompositeDisposable()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val initializeRunnable = Runnable { initializeOnce() }
-    private lateinit var author: Author
     private var appListAdapter: AppListAdapter? = null
     private var initialized = false
     private var appListLoading = false
@@ -88,7 +86,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             return
         }
         initializeUI()
-        author = Author(this, true, prefsBridge)
         setupClickListeners()
         initialized = true
         checkPermissions()
@@ -96,11 +93,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     }
 
     private fun refreshStatus() {
-        if (!::author.isInitialized) return
         val currentService = service
-        if (currentService == null) {
-            author.check(binding.mainActiveStatus, binding.mainStatus, BuildConfig.VERSION_CODE)
-        } else {
+        if (currentService != null) {
             updateFrameworkStatus(currentService.frameworkName, currentService.apiVersion)
         }
     }
@@ -135,9 +129,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     private fun setupClickListeners() {
         binding.mainActiveStatus.setOnClickListener {
             Toast.makeText(this, getString(R.string.check_version_update), Toast.LENGTH_SHORT).show()
-            author.check(
-                binding.mainActiveStatus, binding.mainStatus, BuildConfig.VERSION_CODE, true
-            )
         }
     }
 
@@ -148,7 +139,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             mainFramework.visibility = View.VISIBLE
             mainFramework.text = getString(R.string.main_framework).format(name, "API $apiLevel")
         }
-        author.check(binding.mainActiveStatus, binding.mainStatus, BuildConfig.VERSION_CODE)
     }
 
     private fun checkPermissions() {
@@ -316,11 +306,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
                 true
             }
 
-            R.id.menu_logout -> {
-                author.logout()
-                true
-            }
-
             R.id.menu_join_qq_group -> {
                 val url = "https://qm.qq.com/q/ACNWVPbfq0"
                 val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -398,9 +383,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     override fun onServiceStateChanged(service: XposedService?) {
         super.onServiceStateChanged(service)
         appListAdapter?.refreshScopeState()
-        if (::author.isInitialized) {
-            service?.apply { updateFrameworkStatus(frameworkName, apiVersion) }
-        }
+        service?.apply { updateFrameworkStatus(frameworkName, apiVersion) }
     }
 
     /** 隐藏最近任务列表视图 */

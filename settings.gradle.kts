@@ -36,5 +36,5 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "Fuck AD"
-include(":app", ":FuckAD-Author", ":gkd-selector")
+include(":app", ":gkd-selector")
 
