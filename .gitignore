@@ -19,7 +19,6 @@ local.properties
 .idea/kotlinc.xml
 /.kotlin/
 /.idea/
-/FuckAD-Author/FuckAD-Author.iml
 
 .backup/
 keystore.properties

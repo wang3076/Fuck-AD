@@ -308,7 +308,6 @@ dependencies {
     implementation(libs.rxjava)
     implementation(libs.rxandroid)
     implementation(libs.dexkit)
-    implementation(project(":FuckAD-Author"))
     implementation(project(":gkd-selector"))
 
     compileOnly(libs.libxposed.api)
