@@ -54,7 +54,8 @@ abstract class Hooker {
     ) {
         classLoader = loader ?: param.classLoader
         readHookMetadata()
-        param.runHookOnce()
+        // callWithClassLoader 用于动态 SDK/DEX 增量接入，允许同一 Loader 再扫描一次。
+        param.runHook()
     }
 
     private fun readHookMetadata(): Boolean {
@@ -88,7 +89,12 @@ abstract class Hooker {
         ).run(this)
     }
 
-    internal fun runHookFromCoordinator(param: XposedModuleInterface.PackageReadyParam) {
+    internal fun runHookFromCoordinator(
+        param: XposedModuleInterface.PackageReadyParam,
+        loader: ClassLoader? = null
+    ) {
+        // 动态 DEX 可能继续进入同一 Loader；刷新时显式恢复触发回调的 Loader，避免被主 PathClassLoader 覆盖。
+        classLoader = loader ?: classLoader
         with(param) { runHook() }
     }
 
@@ -163,12 +169,38 @@ abstract class Hooker {
         }
     }
 
-    protected fun Class<*>.cachedDeclaredMethods(): Array<Method> {
+    fun Class<*>.cachedDeclaredMethods(): Array<Method> {
         return HookerReflectionCache.declaredMethods(this)
     }
 
-    protected fun Class<*>.cachedMethods(): Array<Method> {
+    fun Class<*>.cachedMethods(): Array<Method> {
         return HookerReflectionCache.publicMethods(this)
+    }
+
+    fun Method.traceMethod() {
+        hook {
+            after {
+                val stage = when {
+                    name.contains("init", ignoreCase = true) -> "init"
+                    name.contains("load", ignoreCase = true) ||
+                        name.contains("request", ignoreCase = true) -> "load"
+                    name.contains("show", ignoreCase = true) -> "show"
+                    else -> "sdk"
+                }
+                logHookDebug(
+                    "[AdHook] stage=$stage class=${declaringClass.name} " +
+                        "method=$name args=${args.size} " +
+                        "result=${result?.javaClass?.name ?: "null"}"
+                )
+            }
+        }
+    }
+
+    fun Class<*>.traceMethods(vararg names: String) {
+        (cachedDeclaredMethods().asSequence() + cachedMethods().asSequence())
+            .filter { it.name in names }
+            .distinctBy { it.toGenericString() }
+            .forEach { it.traceMethod() }
     }
 
     private fun Executable.hookExecutable(block: HookDsl.() -> Unit) {
@@ -246,12 +278,16 @@ abstract class Hooker {
         param: XposedModuleInterface.PackageReadyParam,
         pangle: Boolean = false,
         gdt: Boolean = false,
-        kw: Boolean = false
+        kw: Boolean = false,
+        mimo: Boolean = false,
+        smartDigiMkt: Boolean = false
     ) {
         val currentClassLoader = classLoader
         if (pangle) Pangle.callWithClassLoader(param, currentClassLoader)
         if (gdt) GDT.callWithClassLoader(param, currentClassLoader)
         if (kw) KW.callWithClassLoader(param, currentClassLoader)
+        if (mimo) com.hujiayucc.hook.hooker.sdk.Mimo.callWithClassLoader(param, currentClassLoader)
+        if (smartDigiMkt) com.hujiayucc.hook.hooker.sdk.SmartDigiMkt.callWithClassLoader(param, currentClassLoader)
     }
 
     protected fun logI(message: String, throwable: Throwable? = null) {

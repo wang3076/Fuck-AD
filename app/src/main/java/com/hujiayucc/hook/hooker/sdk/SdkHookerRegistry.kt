@@ -280,6 +280,28 @@ object SdkHookerRegistry {
                 "com.ironsource.sdk.controller.InterstitialActivity",
                 "com.ironsource.sdk.controller.OpenUrlActivity"
             )
+        ),
+        tieredTarget(
+            id = SdkHookerConfig.MIMO,
+            name = "小米 Mimo",
+            hooker = Mimo,
+            orderedMarkers = listOf(
+                "com.miui.zeus.mimo.sdk.ad.interstitial.view.InterstitialSkipCountDownView",
+                "com.miui.zeus.mimo.sdk.ad.reward.view.RewardSkipCountDownView",
+                "com.miui.zeus.mimo.sdk.ad.interstitial.InterstitialAd",
+                "com.miui.zeus.mimo.sdk.ad.reward.RewardAd"
+            )
+        ),
+        tieredTarget(
+            id = SdkHookerConfig.SMART_DIGI_MKT,
+            name = "SmartDigiMkt",
+            hooker = SmartDigiMkt,
+            orderedMarkers = listOf(
+                "com.smartdigimkt.sdk.basead.ui.CloseFrameLayout",
+                "com.smartdigimkt.sdk.basead.ui.CloseImageView",
+                "com.smartdigimkt.sdk.basead.ui.CountDownCloseView",
+                "com.smartdigimkt.sdk.basead.ui.CountDownView"
+            )
         )
     )
 }

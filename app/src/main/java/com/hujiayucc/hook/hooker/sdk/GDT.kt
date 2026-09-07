@@ -12,20 +12,18 @@ object GDT : Hooker() {
 
     private fun Method.replaceWithDefault() {
         hook {
-            replace {
-                when (returnType) {
-                    in booleanTypes -> false
-                    in voidTypes -> null
-                    String::class.java -> ""
-                    Int::class.javaPrimitiveType, Int::class.java -> 0
-                    Long::class.javaPrimitiveType, Long::class.java -> 0L
-                    Float::class.javaPrimitiveType, Float::class.java -> 0F
-                    Double::class.javaPrimitiveType, Double::class.java -> 0.0
-                    Short::class.javaPrimitiveType, Short::class.java -> 0.toShort()
-                    Byte::class.javaPrimitiveType, Byte::class.java -> 0.toByte()
-                    Char::class.javaPrimitiveType, Char::class.java -> 0.toChar()
-                    else -> null
+            after {
+                val stage = when {
+                    name.contains("init", ignoreCase = true) -> "init"
+                    name.contains("load", ignoreCase = true) ||
+                        name.contains("request", ignoreCase = true) -> "load"
+                    name.contains("show", ignoreCase = true) -> "show"
+                    else -> "sdk"
                 }
+                logHookDebug(
+                    "[AdHook] stage=$stage class=${declaringClass.name} " +
+                        "method=$name args=${args.size} result=${result?.javaClass?.name ?: "null"}"
+                )
             }
         }
     }
@@ -43,7 +41,7 @@ object GDT : Hooker() {
     private fun hookLegacyPluginGuard() {
         $$"com.qq.e.comm.managers.plugin.PM$a".toClassOrNull()
             ?.methodOrNull("a")
-            ?.hook { replaceTo(false) }
+            ?.traceMethod()
     }
 
     private fun hookSdkInit() {

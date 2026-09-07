@@ -9,21 +9,20 @@ abstract class SimpleSdkHooker : Hooker() {
     private val voidTypes = setOf(Void.TYPE, Void::class.java)
 
     protected fun Method.replaceWithDefault() {
+        // SDK 入口只做观察，保留原始调用、回调和生命周期收尾。
         hook {
-            replace {
-                when (returnType) {
-                    in booleanTypes -> false
-                    in voidTypes -> null
-                    String::class.java -> ""
-                    Int::class.javaPrimitiveType, Int::class.java -> 0
-                    Long::class.javaPrimitiveType, Long::class.java -> 0L
-                    Float::class.javaPrimitiveType, Float::class.java -> 0F
-                    Double::class.javaPrimitiveType, Double::class.java -> 0.0
-                    Short::class.javaPrimitiveType, Short::class.java -> 0.toShort()
-                    Byte::class.javaPrimitiveType, Byte::class.java -> 0.toByte()
-                    Char::class.javaPrimitiveType, Char::class.java -> 0.toChar()
-                    else -> null
+            after {
+                val stage = when {
+                    name.contains("init", ignoreCase = true) -> "init"
+                    name.contains("load", ignoreCase = true) ||
+                        name.contains("request", ignoreCase = true) -> "load"
+                    name.contains("show", ignoreCase = true) -> "show"
+                    else -> "sdk"
                 }
+                logHookDebug(
+                    "[AdHook] stage=$stage class=${declaringClass.name} " +
+                        "method=$name args=${args.size} result=${result?.javaClass?.name ?: "null"}"
+                )
             }
         }
     }

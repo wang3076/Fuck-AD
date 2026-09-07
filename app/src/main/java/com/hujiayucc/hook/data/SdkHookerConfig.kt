@@ -18,6 +18,8 @@ object SdkHookerConfig {
     const val UNITY = "unity"
     const val VUNGLE = "vungle"
     const val LEVELPLAY = "levelplay"
+    const val MIMO = "mimo"
+    const val SMART_DIGI_MKT = "smartDigiMkt"
 
     @Volatile
     private var rawConfigCache: String? = null
@@ -38,7 +40,9 @@ object SdkHookerConfig {
         APPLOVIN to "AppLovin MAX",
         UNITY to "Unity Ads",
         VUNGLE to "Vungle/Liftoff",
-        LEVELPLAY to "ironSource/LevelPlay"
+        LEVELPLAY to "ironSource/LevelPlay",
+        MIMO to "小米 Mimo",
+        SMART_DIGI_MKT to "SmartDigiMkt"
     )
 
     val sdkComponentPrefixes = linkedMapOf(
@@ -54,7 +58,9 @@ object SdkHookerConfig {
         APPLOVIN to listOf("com.applovin."),
         UNITY to listOf("com.unity3d.ads.", "com.unity3d.services."),
         VUNGLE to listOf("com.vungle."),
-        LEVELPLAY to listOf("com.ironsource.", "com.unity3d.mediation.")
+        LEVELPLAY to listOf("com.ironsource.", "com.unity3d.mediation."),
+        MIMO to listOf("com.miui.zeus.mimo."),
+        SMART_DIGI_MKT to listOf("com.smartdigimkt.sdk.")
     )
 
     fun isEnabled(prefs: SharedPreferences, packageName: String, sdkId: String): Boolean {

@@ -19,6 +19,7 @@ object DexKitMethodCache {
     private var rootCache: JSONObject = JSONObject()
 
     private val methodCache = ConcurrentHashMap<String, Method>()
+    private val directMethodCache = ConcurrentHashMap<String, Method>()
     private val classMethodsCache = ConcurrentHashMap<Class<*>, Array<Method>>()
 
     fun get(
@@ -29,9 +30,13 @@ object DexKitMethodCache {
         classLoader: ClassLoader?
     ): Method? {
         val key = cacheKey(packageName, apkPath, queryId)
+        val loader = classLoader ?: return null
+        directMethodCache["$key|${System.identityHashCode(loader)}"]?.let { return it }
         val entry = entry(prefs, key) ?: return null
         if (!entry.matches(apkPath)) return null
-        return methodForEntry(entry, classLoader, key)
+        return methodForEntry(entry, loader, key)?.also {
+            directMethodCache["$key|${System.identityHashCode(loader)}"] = it
+        }
     }
 
     fun put(
@@ -44,13 +49,20 @@ object DexKitMethodCache {
         val root = JSONObject(root(prefs).toString())
         val key = cacheKey(packageName, apkPath, queryId)
         val entry = MethodEntry.from(apkPath, method)
-        root.put(key, entry.toJson())
-        prefs.edit().putString(PREF_KEY, root.toString()).apply()
-        synchronized(this) {
-            rawCache = null
-            rootCache = JSONObject()
-        }
         cacheMethod(key, method.declaringClass.classLoader, entry, method)
+        method.declaringClass.classLoader?.let { loader ->
+            directMethodCache["$key|${System.identityHashCode(loader)}"] = method
+        }
+        runCatching {
+            root.put(key, entry.toJson())
+            prefs.edit().putString(PREF_KEY, root.toString()).apply()
+            synchronized(this) {
+                rawCache = null
+                rootCache = JSONObject()
+            }
+        }.onFailure {
+            // 远程偏好可能是只读实现；本进程缓存仍可供当前 Loader 复用。
+        }
     }
 
     private fun entry(prefs: SharedPreferences, key: String): MethodEntry? {

@@ -67,10 +67,10 @@ object SdkHookerResolver {
         return runCatching { loadClass(className) }
             .isSuccess
             .also { exists ->
-                if (exists) {
-                    synchronized(presentClassCache) {
-                        presentClassCache.getOrPut(this, ::HashSet) += className
-                    }
+                synchronized(presentClassCache) {
+                    val cache = presentClassCache.getOrPut(this, ::HashSet)
+                    // 只缓存命中结果；动态 Dex 后续加载时仍能再次发现新 SDK。
+                    if (exists) cache += className
                 }
             }
     }

@@ -9,27 +9,25 @@ import java.lang.reflect.Modifier
 import java.util.Collections
 
 /** 快手 */
-object KW : Hooker() {
+object KW : AdCloseSdkHooker() {
     private val hookedLoadManagerClasses = Collections.synchronizedSet(mutableSetOf<String>())
     private val booleanTypes = setOf(Boolean::class.javaPrimitiveType, Boolean::class.java)
     private val voidTypes = setOf(Void.TYPE, Void::class.java)
 
     private fun Method.replaceWithDefault() {
         hook {
-            replace {
-                when (returnType) {
-                    in booleanTypes -> false
-                    in voidTypes -> null
-                    String::class.java -> ""
-                    Int::class.javaPrimitiveType, Int::class.java -> 0
-                    Long::class.javaPrimitiveType, Long::class.java -> 0L
-                    Float::class.javaPrimitiveType, Float::class.java -> 0F
-                    Double::class.javaPrimitiveType, Double::class.java -> 0.0
-                    Short::class.javaPrimitiveType, Short::class.java -> 0.toShort()
-                    Byte::class.javaPrimitiveType, Byte::class.java -> 0.toByte()
-                    Char::class.javaPrimitiveType, Char::class.java -> 0.toChar()
-                    else -> null
+            after {
+                val stage = when {
+                    name.contains("init", ignoreCase = true) -> "init"
+                    name.contains("load", ignoreCase = true) ||
+                        name.contains("request", ignoreCase = true) -> "load"
+                    name.contains("show", ignoreCase = true) -> "show"
+                    else -> "sdk"
                 }
+                logHookDebug(
+                    "[AdHook] stage=$stage class=${declaringClass.name} " +
+                        "method=$name args=${args.size} result=${result?.javaClass?.name ?: "null"}"
+                )
             }
         }
     }
@@ -139,29 +137,33 @@ object KW : Hooker() {
             )
     }
 
-    @SuppressLint("ResourceType")
-    private fun hookLegacySkipControls() {
-        "com.duowan.kiwi.adsplash.view.AdSplashFragment".toClassOrNull()
-            ?.methods("findViews")
-            ?.hook {
-                after {
-                    val view = (chain.args[0] as View).findViewById<View>(0x7f0923c9)
-                    runMain { view.performClick() }
-                }
-            }
-
-        "com.kwad.components.ad.splashscreen.widget.CircleSkipView".toClassOrNull()
-            ?.cachedDeclaredMethods()?.hook {
-                after {
-                    val view = instance<View>()
-                    runMain { view.performClick() }
-                }
-            }
+    private fun hookDedicatedCloseControls() {
+        hookCloseView(
+            "com.kwad.components.ad.splashscreen.widget.SkipView",
+            "kwad-skip-view"
+        )
+        hookCloseView(
+            "com.kwad.components.ad.splashscreen.widget.CircleSkipView",
+            "kwad-circle-skip-view"
+        )
+        hookCloseView(
+            "com.kwad.components.ad.splashscreen.widget.CloseCountDownView",
+            "kwad-close-countdown-view"
+        )
+        hookCloseView(
+            "com.kwad.components.core.widget.KsAutoCloseView",
+            "kwad-auto-close-view"
+        )
+        hookCloseViewMethods(
+            "com.kwad.components.ad.reward.widget.RewardPreviewTopBarView",
+            "kwad-reward-topbar-close",
+            "onAttachedToWindow", "onVisibilityChanged", "setImageResource", "setVisibility"
+        )
     }
 
     override fun XposedModuleInterface.PackageReadyParam.onPackageReady() {
         hookSdkInit()
         hookAdObjects()
-        hookLegacySkipControls()
+        hookDedicatedCloseControls()
     }
 }

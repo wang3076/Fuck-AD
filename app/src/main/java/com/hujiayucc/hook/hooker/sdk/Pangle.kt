@@ -12,12 +12,18 @@ object Pangle : Hooker() {
 
     private fun Method.replaceWithDefault() {
         hook {
-            replace {
-                when (returnType) {
-                    in booleanTypes -> false
-                    in voidTypes -> null
-                    else -> null
+            after {
+                val stage = when {
+                    name.contains("init", ignoreCase = true) -> "init"
+                    name.contains("load", ignoreCase = true) ||
+                        name.contains("request", ignoreCase = true) -> "load"
+                    name.contains("show", ignoreCase = true) -> "show"
+                    else -> "sdk"
                 }
+                logHookDebug(
+                    "[AdHook] stage=$stage class=${declaringClass.name} " +
+                        "method=$name args=${args.size} result=${result?.javaClass?.name ?: "null"}"
+                )
             }
         }
     }
@@ -68,33 +74,27 @@ object Pangle : Hooker() {
             ?.hookMethods("init", "start", "isInitSuccess", "isSdkReady")
 
         "com.bytedance.sdk.openadsdk.core.component.splash.countdown.TTCountdownViewForCircle".toClassOrNull()
-            ?.cachedDeclaredMethods()?.hook {
-                after {
-                    (chain.thisObject as? View)?.performClick()
-                }
-            }
+            ?.traceMethods("onAttachedToWindow", "onVisibilityChanged", "setText", "performClick")
 
         "com.bytedance.sdk.openadsdk.core.component.splash.e.r\$1".toClassOrNull()
-            ?.methodOrNull("run")?.hook {
-                replaceUnit {}
-            }
+            ?.traceMethods("run")
     }
 
     private fun hookSdkInit() {
         "com.bytedance.sdk.openadsdk.TTAdSdk".toClassOrNull()
             ?.let { ttAdSdk ->
                 ttAdSdk.methodOrNull("init", "(Landroid/content/Context;Lcom/bytedance/sdk/openadsdk/TTAdConfig;)Z")
-                    ?.hook { replaceTo(false) }
+                    ?.traceMethod()
                 ttAdSdk.methodOrNull("start", "(Lcom/bytedance/sdk/openadsdk/TTAdSdk\$Callback;)V")
-                    ?.hook { replaceUnit {} }
+                    ?.traceMethod()
                 ttAdSdk.methodOrNull("isInitSuccess", "()Z")
-                    ?.hook { replaceTo(false) }
+                    ?.traceMethod()
                 ttAdSdk.methodOrNull("isSdkReady", "()Z")
-                    ?.hook { replaceTo(false) }
+                    ?.traceMethod()
                 ttAdSdk.methodOrNull("updateAdConfig", "(Lcom/bytedance/sdk/openadsdk/TTAdConfig;)V")
-                    ?.hook { replaceUnit {} }
+                    ?.traceMethod()
                 ttAdSdk.methodOrNull("updateConfigAuth", "(Lcom/bytedance/sdk/openadsdk/TTAdConfig;)V")
-                    ?.hook { replaceUnit {} }
+                    ?.traceMethod()
             }
 
         "com.bytedance.sdk.openadsdk.api.a".toClassOrNull()
@@ -102,25 +102,22 @@ object Pangle : Hooker() {
                 initializer.methodOrNull(
                     "a",
                     "(Landroid/content/Context;Lcom/bytedance/sdk/openadsdk/AdConfig;Lcom/bytedance/sdk/openadsdk/TTAdSdk\$InitCallback;)V"
-                )?.hook { replaceUnit {} }
+                )?.traceMethod()
                 initializer.methodOrNull(
                     "b",
                     "(Landroid/content/Context;Lcom/bytedance/sdk/openadsdk/AdConfig;Lcom/bytedance/sdk/openadsdk/TTAdSdk\$InitCallback;)Z"
-                )?.hook { replaceTo(false) }
+                )?.traceMethod()
             }
     }
 
     private fun hookConfig() {
         "com.bytedance.sdk.openadsdk.CSJConfig".toClassOrNull()
             ?.let { config ->
-                config.methodOrNull("isPaid")?.hook { replaceTo(false) }
-                config.methodOrNull("isDebug")?.hook { replaceTo(false) }
-                config.methodOrNull("isAllowShowNotify")?.hook { replaceTo(false) }
-                config.methodOrNull("isSupportMultiProcess")?.hook { replaceTo(false) }
-                config.methodOrNull("isUseMediation")?.hook { replaceTo(false) }
-                config.methodOrNull("getPluginUpdateConfig")?.hook { replaceTo(0) }
-                config.methodOrNull("getDirectDownloadNetworkType")?.hook { replaceTo(intArrayOf()) }
-                config.methodOrNull("getMediationConfig")?.hook { replaceTo(null) }
+                config.traceMethods(
+                    "isPaid", "isDebug", "isAllowShowNotify", "isSupportMultiProcess",
+                    "isUseMediation", "getPluginUpdateConfig", "getDirectDownloadNetworkType",
+                    "getMediationConfig"
+                )
             }
     }
 
@@ -137,9 +134,7 @@ object Pangle : Hooker() {
                     "setRewardAmount",
                     "setMediationAdSlot"
                 ).forEach { methodName ->
-                    builder.methods(methodName).hook {
-                        replace { instance }
-                    }
+                    builder.traceMethods(methodName)
                 }
             }
     }
@@ -159,31 +154,27 @@ object Pangle : Hooker() {
                     "loadRewardVideoAd",
                     "loadFullScreenVideoAd"
                 ).forEach { methodName ->
-                    adNative.methods(methodName).hook { replaceUnit {} }
+                    adNative.traceMethods(methodName)
                 }
             }
 
         "com.bytedance.sdk.openadsdk.api.a\$c".toClassOrNull()
             ?.let { manager ->
-                manager.methodOrNull("createAdNative", "(Landroid/content/Context;)Lcom/bytedance/sdk/openadsdk/TTAdNative;")
-                    ?.hook { replaceTo(null) }
-                manager.methods("requestPermissionIfNecessary").hook { replaceUnit {} }
-                manager.methods("tryShowInstallDialogWhenExit").hook { replaceTo(false) }
-                manager.methods("getBiddingToken").hook { replaceTo(null) }
+                manager.traceMethods(
+                    "createAdNative", "requestPermissionIfNecessary",
+                    "tryShowInstallDialogWhenExit", "getBiddingToken"
+                )
             }
     }
 
     private fun hookSplashAd() {
         "com.bytedance.sdk.openadsdk.c.a.a.b".toClassOrNull()
             ?.let { splashAd ->
-                splashAd.methods("showSplashView").hook { replaceUnit {} }
-                splashAd.methods("showSplashClickEyeView").hook { replaceUnit {} }
-                splashAd.methods("showSplashCardView").hook { replaceUnit {} }
-                splashAd.methods("startClickEye").hook { replaceUnit {} }
-                splashAd.methods("hideSkipButton").hook { replaceUnit {} }
-                splashAd.methods("getSplashView").hook { replaceTo(null) }
-                splashAd.methods("getSplashClickEyeView").hook { replaceTo(null) }
-                splashAd.methods("getSplashCardView").hook { replaceTo(null) }
+                splashAd.traceMethods(
+                    "showSplashView", "showSplashClickEyeView", "showSplashCardView",
+                    "startClickEye", "hideSkipButton", "getSplashView",
+                    "getSplashClickEyeView", "getSplashCardView"
+                )
             }
     }
 

@@ -63,7 +63,7 @@ internal class HookInstaller(
         }
     }
 
-    private class InstalledHookCallback(
+    private inner class InstalledHookCallback(
         private val executable: Executable,
         override val chain: XposedInterface.Chain
     ) : HookCallback {
