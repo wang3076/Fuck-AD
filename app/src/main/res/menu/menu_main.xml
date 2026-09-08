@@ -8,9 +8,6 @@
             android:title="@string/menu_hide_from_recents"
             android:checkable="true" />
     <item
-            android:id="@+id/menu_logout"
-            android:title="@string/menu_logout" />
-    <item
             android:id="@+id/menu_join_qq_group"
             android:title="@string/join_qq_group" />
     <item

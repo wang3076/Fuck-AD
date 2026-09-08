@@ -33,10 +33,6 @@
 
     <!-- 权限操作 -->
     <string name="understand_and_grant">理解并授权</string>
-    <string name="root_identity_title">需要 Root 权限</string>
-    <string name="root_identity_message">应用将请求 Root 权限以读取主板序列号并生成设备标识。若未获得 Root 权限或未读取到有效序列号，将使用系统设备 ID。</string>
-    <string name="root_identity_continue">继续并请求 Root</string>
-    <string name="root_identity_fallback">未读取到主板序列号，已使用系统设备 ID</string>
     <string name="description">去他妈的广告</string>
     <string name="open_fuck_ad">打开 Fuck AD</string>
 
@@ -45,7 +41,6 @@
     <string name="menu_hide_from_recents">从最近任务中隐藏</string>
     <string name="menu_click_info">打印点击事件</string>
     <string name="menu_stack_track">打印点击堆栈</string>
-    <string name="menu_logout">退出登录</string>
     <string name="check_version_update">正在检查更新…</string>
     <string name="languages_settings">语言设置</string>
     <string name="system_language">系统语言</string>

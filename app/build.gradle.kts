@@ -307,7 +307,6 @@ dependencies {
     implementation(libs.rxjava)
     implementation(libs.rxandroid)
     implementation(libs.dexkit)
-    implementation(project(":author"))
     implementation(project(":gkd-selector"))
 
     compileOnly(libs.libxposed.api)

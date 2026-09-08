@@ -4,9 +4,6 @@
 [submodule "backend"]
 	path = backend
 	url = https://github.com/hujiayucc/FuckAD-Backend.git
-[submodule "author"]
-	path = author
-	url = https://github.com/hujiayucc/FuckAD-Author.git
 [submodule "repo"]
 	path = repo
 	url = https://github.com/Xposed-Modules-Repo/com.hujiayucc.hook.git
